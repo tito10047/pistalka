@@ -85,21 +85,30 @@ Doplnené vedľa štandardného `mobile-web-app-capable` (staršie iOS pozná le
 
 ### 3. Dedikovaná ikona `apple-touch-icon` 180×180
 
-Predtým sa používala `icons/icon-192.png`, ktorá má **biele rohy** — `favicon.svg` má
-zaoblené rohy (`rx="112"`) a Playwright priehľadnosť pri screenshote podkladá bielou.
-iOS si ikonu maskuje do squircle sám, takže okolo tmavého štvorca svietil biely lem.
+Predtým sa používala `icons/icon-192.png`, ktorá mala **biele rohy**. `favicon.svg` má
+zaoblené rohy (`rx="112"`), takže rohové pixely sú priehľadné — a `page.screenshot()`
+v Playwrighte štandardne podkladá stránku **nepriehľadným bielym plátnom**, takže sa tá
+biela zapiekla do PNG. iOS si ikonu maskuje do squircle sám, takže okolo tmavého štvorca
+svietil biely lem.
 
-Riešenie: `scripts/generate-icons.mjs` má nový voliteľný parameter `background`. Pre
-`static/icons/apple-touch-icon.png` (180×180) sa `favicon.svg` renderuje na pozadí
-**tej istej farby**, akú má jeho vlastný podklad (`#0b1220`) — zaoblené rohy tak splynú
-a vznikne plný nepriehľadný štvorec. Žiadna tretia kópia kresby nebola potrebná.
+Dve nezávislé opravy:
 
-Ostatné ikony sa nezmenili (`background` je pri nich `transparent`, čo zodpovedá
-pôvodnému správaniu). Generuje sa cez `npm run icons`, do buildu ide cez `publicDir: 'static'`.
+- **`omitBackground: true`** pri screenshote v `scripts/generate-icons.mjs` — biele plátno
+  sa vypne a priehľadnosť ostane priehľadnosťou. Odvtedy majú `icon-192.png` aj
+  `icon-512.png` korektný alfa kanál (RGBA, rohy `alpha = 0`), ako sa od ikon v manifeste
+  čaká.
+- **vlastná predloha `scripts/icon-apple.svg`** — tá istá kresba, ale s podkladom cez celú
+  plochu a bez zaoblenia. Z nej sa renderuje `static/icons/apple-touch-icon.png` (180×180)
+  ako plný nepriehľadný štvorec, ktorý si iOS zaoblí sám.
 
-> Poznámka: `icon-192.png`/`icon-512.png` v manifeste majú stále biele rohy. Na Androide
-> sa používa maskable varianta, takže to nevadí — ak by prekážalo, stačí im nastaviť
-> `background: '#0b1220'` v generátore.
+`icon-maskable-512.png` sa nezmenil — jeho SVG má tiež `rect` cez celú plochu, takže je
+nepriehľadný tak či tak.
+
+Zhrnutie predlôh: `static/icons/favicon.svg` (zaoblená, priehľadné rohy → favicon a ikony
+v manifeste), `scripts/icon-maskable.svg` (kresba na 62 %, plné pozadie → Android adaptive),
+`scripts/icon-apple.svg` (kresba na 100 %, plné pozadie → iOS).
+
+Generuje sa cez `npm run icons`, do buildu ide cez `publicDir: 'static'`.
 
 ### 4. 7-dňová evikcia úložiska (ITP) — vedieť o nej, netreba nič kódiť
 
