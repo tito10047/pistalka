@@ -8,6 +8,12 @@ export interface WhistleSettings {
   duration: number
   /** 0–1 */
   volume: number
+  /**
+   * 0–1. Nad nulou sa zvuk preženie mäkkým orezaním – zahustí priebeh k obdĺžniku,
+   * takže pri rovnakej špičke nesie výrazne viac energie. Za hlasitosť sa platí
+   * skreslením, preto je predvolene vypnutý a UI si prvé zapnutie pýta potvrdiť.
+   */
+  boost: number
 }
 
 export const SETTINGS_KEY = 'pistalka.settings'
@@ -25,6 +31,7 @@ export const LIMITS = {
   frequency: { min: 800, max: 4500, step: 10 },
   duration: { min: 100, max: 2000, step: 50 },
   volume: { min: 0, max: 1, step: 0.05 },
+  boost: { min: 0, max: 1, step: 0.25 },
 } as const
 
 export const DEFAULT_SETTINGS: WhistleSettings = {
@@ -32,6 +39,7 @@ export const DEFAULT_SETTINGS: WhistleSettings = {
   soundType: 'classic',
   duration: 600,
   volume: 1,
+  boost: 0,
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -67,6 +75,7 @@ export function normalizeSettings(raw: unknown): WhistleSettings {
       LIMITS.duration.max,
     ),
     volume: toNumber(input.volume, DEFAULT_SETTINGS.volume, LIMITS.volume.min, LIMITS.volume.max),
+    boost: toNumber(input.boost, DEFAULT_SETTINGS.boost, LIMITS.boost.min, LIMITS.boost.max),
   }
 }
 

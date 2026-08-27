@@ -72,6 +72,47 @@ test('dĺžka a hlasitosť sa ukladajú a zobrazujú v čitateľných jednotkác
     .toMatchObject({ duration: 1200, volume: 0.25 })
 })
 
+test('boost je predvolene vypnutý a zapne sa až po potvrdení', async ({ page }) => {
+  await page.goto('/')
+  await openSettings(page)
+
+  await expect(page.getByLabel('Boost')).toHaveValue('0')
+  await expect(page.getByTestId('boost-value')).toHaveText('vypnutý')
+
+  page.on('dialog', (dialog) => dialog.accept())
+  await page.getByLabel('Boost').fill('0.75')
+
+  await expect(page.getByTestId('boost-value')).toHaveText('75 %')
+  await expect.poll(async () => (await readStoredSettings(page))?.boost).toBe(0.75)
+
+  await page.reload()
+  await openSettings(page)
+  await expect(page.getByLabel('Boost')).toHaveValue('0.75')
+})
+
+test('zamietnuté potvrdenie nechá boost vypnutý', async ({ page }) => {
+  await page.goto('/')
+  await openSettings(page)
+
+  // Playwright dialógy predvolene zamieta, čo je presne prípad „používateľ dal Zrušiť".
+  await page.getByLabel('Boost').fill('1')
+
+  await expect(page.getByLabel('Boost')).toHaveValue('0')
+  await expect(page.getByTestId('boost-value')).toHaveText('vypnutý')
+  await expect.poll(async () => (await readStoredSettings(page))?.boost).toBe(0)
+})
+
+test('zapnutý boost sa použije pri písknutí', async ({ page }) => {
+  await seedStorage(page, {
+    settings: { frequency: 2800, soundType: 'classic', duration: 600, volume: 1, boost: 1 },
+  })
+  await page.goto('/')
+
+  await page.getByRole('button', { name: /zapískaj/i }).click()
+
+  expect((await whistles(page))[0]).toMatchObject({ boost: 1 })
+})
+
 test('tlačidlo Vyskúšať prehrá zvuk, ale nezapočíta sa do počítadla', async ({ page }) => {
   await page.goto('/')
   await openSettings(page)

@@ -1,4 +1,4 @@
-import type { WhistleSettings } from './settings-store'
+import { normalizeSettings, type WhistleSettings } from './settings-store'
 
 /** Event vystrelený pri každom písknutí – hook pre testy a prípadné rozšírenia. */
 export const WHISTLE_EVENT = 'pistalka:whistle'
@@ -26,16 +26,19 @@ function ensureContext(): { ctx: AudioContext; out: GainNode } | null {
     const gain = context.createGain()
     gain.gain.value = 1
 
-    // Kompresor drží zvuk hlasný a bez klipovania aj pri plnej hlasitosti.
-    const compressor = context.createDynamicsCompressor()
-    compressor.threshold.value = -18
-    compressor.knee.value = 12
-    compressor.ratio.value = 12
-    compressor.attack.value = 0.002
-    compressor.release.value = 0.15
+    // Limiter je len poistka proti klipovaniu, nie hlasitostná úprava: prah tesne
+    // pod plnou škálou, takže bežné písknutie ním prejde nedotknuté. Predtým tu bol
+    // kompresor s prahom -18 dB a ratiom 12, ktorý stláčal celé písknutie
+    // (merané RMS 0,26 oproti 0,36 na tej istej ceste s limiterom).
+    const limiter = context.createDynamicsCompressor()
+    limiter.threshold.value = -1
+    limiter.knee.value = 0
+    limiter.ratio.value = 20
+    limiter.attack.value = 0.001
+    limiter.release.value = 0.05
 
-    gain.connect(compressor)
-    compressor.connect(context.destination)
+    gain.connect(limiter)
+    limiter.connect(context.destination)
     master = gain
   }
 
@@ -67,7 +70,9 @@ interface Voice {
 /** Klasická píšťalka s guličkou: nosný tón + vrchné harmonické, trilkovanie z guličky. */
 function buildClassic(ctx: BaseAudioContext, s: WhistleSettings, seconds: number): Voice {
   const mix = ctx.createGain()
-  mix.gain.value = 1
+  // Zložky sa v najhoršom prípade sčítajú na 1 + 0,28 + 0,08 + 0,12 = 1,48;
+  // delíme, aby hlas vystupoval s vrcholom ~1 a obálka riadila hlasitosť sama.
+  mix.gain.value = 1 / 1.48
 
   const fundamental = ctx.createOscillator()
   fundamental.type = 'sine'
@@ -128,7 +133,8 @@ function buildClassic(ctx: BaseAudioContext, s: WhistleSettings, seconds: number
 /** Bezguličková píšťalka (Fox 40): dva blízke tóny, ktoré spolu „režú". */
 function buildPealess(ctx: BaseAudioContext, s: WhistleSettings, seconds: number): Voice {
   const mix = ctx.createGain()
-  mix.gain.value = 1
+  // Rovnaká normalizácia ako pri klasickej: 1 + 0,75 + 0,18 + 0,1 = 2,03.
+  mix.gain.value = 1 / 2.03
 
   const a = ctx.createOscillator()
   a.type = 'sine'
@@ -177,7 +183,36 @@ function buildBeep(ctx: BaseAudioContext, s: WhistleSettings): Voice {
   filter.frequency.value = s.frequency * 3
   osc.connect(filter)
 
-  return { sources: [osc], output: filter }
+  // Rezonancia filtra prestrelí obdĺžnik nad 1, stiahneme ho späť na vrchol ~1.
+  const trim = ctx.createGain()
+  trim.gain.value = 0.8
+  filter.connect(trim)
+
+  return { sources: [osc], output: trim }
+}
+
+const CURVE_SAMPLES = 2048
+// Generika Float32Array<ArrayBuffer> je nutná – WaveShaper.curve nezoberie SharedArrayBuffer.
+const curveCache = new Map<number, Float32Array<ArrayBuffer>>()
+
+/**
+ * Krivka mäkkého orezania (tanh) normalizovaná tak, aby vstup ±1 dal výstup ±1.
+ * Drive musí byť **zapečený v krivke**, nie v predradenom zosilnení – WaveShaper
+ * si vstup mimo ⟨-1, 1⟩ tak či tak oreže na krajný bod krivky.
+ * Čím vyšší drive, tým bližšie k obdĺžniku, teda tým viac energie pri rovnakej špičke.
+ */
+function saturationCurve(drive: number): Float32Array<ArrayBuffer> {
+  const cached = curveCache.get(drive)
+  if (cached) return cached
+
+  const curve = new Float32Array(CURVE_SAMPLES)
+  const norm = Math.tanh(drive)
+  for (let i = 0; i < CURVE_SAMPLES; i++) {
+    const x = (i / (CURVE_SAMPLES - 1)) * 2 - 1
+    curve[i] = Math.tanh(drive * x) / norm
+  }
+  curveCache.set(drive, curve)
+  return curve
 }
 
 /** Postaví a naplánuje jedno písknutie do ľubovoľného kontextu (živého aj offline). */
@@ -205,7 +240,24 @@ function scheduleWhistle(
   envelope.gain.setValueAtTime(peak, startAt + Math.max(attack, seconds - release))
   envelope.gain.exponentialRampToValueAtTime(0.0001, startAt + seconds)
 
-  voice.output.connect(envelope)
+  // Boost patrí PRED obálku – inak by orezanie zrovnalo aj nábeh a dozvuk.
+  if (settings.boost > 0) {
+    const shaper = ctx.createWaveShaper()
+    shaper.curve = saturationCurve(2 + settings.boost * 8)
+    shaper.oversample = '4x'
+
+    // Prevzorkovanie tvarovača necháva na hranách zvlnenie do ~16 % nad jednotku;
+    // trim ho vráti pod plnú škálu, aby výstup nezávisel od limitera.
+    const trim = ctx.createGain()
+    trim.gain.value = 0.86
+
+    voice.output.connect(shaper)
+    shaper.connect(trim)
+    trim.connect(envelope)
+  } else {
+    voice.output.connect(envelope)
+  }
+
   envelope.connect(destination)
 
   for (const source of voice.sources) {
@@ -222,11 +274,13 @@ function scheduleWhistle(
  * všetky audio uzly sa po dohraní samé odpoja.
  */
 export function whistle(settings: WhistleSettings): void {
-  document.dispatchEvent(new CustomEvent(WHISTLE_EVENT, { detail: { ...settings } }))
+  // Normalizujeme aj tu – funkcia je vystavená ako ladiace API `window.pistalka`.
+  const safe = normalizeSettings(settings)
+  document.dispatchEvent(new CustomEvent(WHISTLE_EVENT, { detail: safe }))
 
   const audio = ensureContext()
   if (!audio) return
-  scheduleWhistle(audio.ctx, audio.out, settings, audio.ctx.currentTime)
+  scheduleWhistle(audio.ctx, audio.out, safe, audio.ctx.currentTime)
 }
 
 /**
@@ -237,9 +291,10 @@ export function renderWhistleOffline(
   settings: WhistleSettings,
   sampleRate = 48000,
 ): Promise<AudioBuffer> {
-  const seconds = settings.duration / 1000
+  const safe = normalizeSettings(settings)
+  const seconds = safe.duration / 1000
   const frames = Math.ceil((seconds + 0.05) * sampleRate)
   const ctx = new OfflineAudioContext(1, frames, sampleRate)
-  scheduleWhistle(ctx, ctx.destination, settings, 0)
+  scheduleWhistle(ctx, ctx.destination, safe, 0)
   return ctx.startRendering()
 }

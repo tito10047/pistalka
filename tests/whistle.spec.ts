@@ -71,7 +71,7 @@ test('písknutie použije nastavenia uložené v localStorage', async ({ page })
   await page.getByRole('button', { name: /zapískaj/i }).click()
 
   expect(await whistles(page)).toEqual([
-    { frequency: 1500, soundType: 'beep', duration: 250, volume: 0.5 },
+    { frequency: 1500, soundType: 'beep', duration: 250, volume: 0.5, boost: 0 },
   ])
 })
 

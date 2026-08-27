@@ -162,6 +162,32 @@
             />
           </div>
 
+          <div>
+            <div class="mb-2 flex items-baseline justify-between">
+              <label for="boost" class="text-sm text-slate-300">Boost</label>
+              <span
+                data-settings-target="boostValue"
+                data-testid="boost-value"
+                class="text-sm font-medium tabular-nums text-amber-400"
+                >vypnutý</span
+              >
+            </div>
+            <input
+              id="boost"
+              type="range"
+              min="0"
+              max="1"
+              step="0.25"
+              value="0"
+              class="slider"
+              data-settings-target="boost"
+              data-action="input->settings#previewBoost change->settings#applyBoost"
+            />
+            <p class="mt-2 text-xs leading-snug text-slate-500">
+              Pre telocvičňu. Zvuk je výrazne hlasnejší a ostrejší, ale skreslený.
+            </p>
+          </div>
+
           <div class="flex gap-3 pt-1">
             <button
               type="button"

@@ -5,7 +5,11 @@ export interface WhistleSettings {
   soundType: 'classic' | 'pealess' | 'beep'
   duration: number
   volume: number
+  boost: number
 }
+
+/** Appka si vstup normalizuje, takže ladiace API znesie aj nekompletné nastavenia. */
+export type WhistleInput = Omit<WhistleSettings, 'boost'> & { boost?: number }
 
 export const SETTINGS_KEY = 'pistalka.settings'
 export const COUNT_KEY = 'pistalka.count'
@@ -15,8 +19,8 @@ declare global {
     __whistles: WhistleSettings[]
     /** Ladiace API aplikácie – umožňuje analyzovať vyrenderovaný zvuk. */
     pistalka: {
-      whistle(settings: WhistleSettings): void
-      renderWhistleOffline(settings: WhistleSettings, sampleRate?: number): Promise<AudioBuffer>
+      whistle(settings: WhistleInput): void
+      renderWhistleOffline(settings: WhistleInput, sampleRate?: number): Promise<AudioBuffer>
     }
   }
 }

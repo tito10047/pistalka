@@ -45,7 +45,11 @@ Zdrojové súbory (`index.html`, `main.ts`, `style.css`, `services/`, `controlle
 
 `AudioContext` sa vytvára lenivo — `main.ts` ho odomkne pri prvom `pointerdown`, prehliadače inak zvuk blokujú.
 
-Stimulus controllery sú tenké: `whistle_controller` rieši počítadlo a slovenské skloňovanie (1 písknutie / 2–4 písknutia / inak pískaní), `settings_controller` formulár, ktorý ukladá okamžite pri každom `input`/`change` — appka nemá tlačidlo „Uložiť".
+### Hlasitostná cesta
+
+Každý hlas je normalizovaný na špičku ~1 (deliče v `build*` treba prepočítať, keď sa zmenia zisky zložiek) a v masteri sedí `DynamicsCompressor` nastavený ako **limiter** (prah -1 dB, ratio 20) — teda ako poistka proti klipovaniu, nie ako hlasitostná úprava. Nastavenie `boost` pridáva pred obálku `WaveShaper` s tanh krivkou; drive je zapečený v krivke, lebo WaveShaper si vstup mimo ⟨-1, 1⟩ oreže. Boost je zámerne vo `scheduleWhistle`, nie v masteri, aby sa dal odmerať v `OfflineAudioContext`. Poradie je dôležité: **tvarovač pred obálkou**, inak orezanie zrovná aj nábeh a dozvuk.
+
+Stimulus controllery sú tenké: `whistle_controller` rieši počítadlo a slovenské skloňovanie (1 písknutie / 2–4 písknutia / inak pískaní), `settings_controller` formulár, ktorý ukladá okamžite pri každom `input`/`change` — appka nemá tlačidlo „Uložiť". Výnimka je posuvník **Boost**: ukladá sa až na `change` (pustenie), aby sa potvrdzovacie `confirm()` neotvorilo uprostred ťahania; počas ťahania `previewBoost()` mení len popis.
 
 ## Testy
 

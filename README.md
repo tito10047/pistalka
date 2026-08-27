@@ -2,7 +2,7 @@
 
 PWA píšťalka pre tréning boxu. Veľké tlačidlo **Zapískaj** prehrá zvuk píšťalky, nad ním beží
 počítadlo pískaní. Zvuk sa syntetizuje cez Web Audio API, takže sa dá plynule meniť frekvencia,
-typ, dĺžka aj hlasitosť. Nastavenia aj počítadlo sa ukladajú do `localStorage` a aplikácia funguje
+typ, dĺžka, hlasitosť aj boost pre hlučné prostredie. Nastavenia aj počítadlo sa ukladajú do `localStorage` a aplikácia funguje
 offline.
 
 ## Spustenie
@@ -49,6 +49,15 @@ audio súbory a frekvencia je spojito nastaviteľná.
 
 `AudioContext` sa vytvára až pri prvom dotyku obrazovky – prehliadače inak zvuk blokujú.
 
+### Boost
+
+Posuvník **Boost** je pre hlučné prostredie (telocvičňa). Zvuk sa preženie mäkkým orezaním (tanh),
+čo zahustí priebeh smerom k obdĺžniku – pri rovnakej špičke tak nesie výrazne viac energie
+a pribudnú vyššie harmonické, ktoré lepšie prerežú hluk. Nameraná RMS klasickej píšťalky rastie
+z 0,36 na 0,70, teda o zhruba 6 dB, špička ostáva pod plnou škálou.
+
+Platí sa za to skreslením, preto je boost predvolene vypnutý a prvé zapnutie si UI vypýta potvrdiť.
+
 ## Testy
 
 Testuje sa cez Playwright proti reálnemu produkčnému buildu (`playwright.config.ts` si build aj
@@ -57,7 +66,7 @@ preview server spustí sám), v profile `desktop` aj `mobil`.
 | Súbor | Čo overuje |
 |---|---|
 | `tests/whistle.spec.ts` | počítadlo, skloňovanie, reset, perzistencia, odolnosť voči poškodeným dátam |
-| `tests/settings.spec.ts` | predvyplnenie formulára, okamžité ukladanie, tlačidlá Vyskúšať a Predvolené |
+| `tests/settings.spec.ts` | predvyplnenie formulára, okamžité ukladanie, potvrdenie boostu, tlačidlá Vyskúšať a Predvolené |
 | `tests/sound.spec.ts` | že zvuk naozaj znie – renderuje sa cez `OfflineAudioContext` a analyzujú sa vzorky |
 | `tests/pwa.spec.ts` | manifest, dostupnosť ikon, registrácia service workera a chod offline |
 

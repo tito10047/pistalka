@@ -14,9 +14,4 @@ blob-report/
 
 # Playwright MCP artefakty
 .playwright-mcp/
-/.idea/.gitignore
-/.idea/misc.xml
-/.idea/modules.xml
-/.idea/php.xml
-/.idea/pistalka.iml
-/.idea/vcs.xml
+/.idea/
