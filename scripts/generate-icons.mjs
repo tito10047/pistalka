@@ -12,6 +12,14 @@ const targets = [
   { svg: 'static/icons/favicon.svg', out: 'static/icons/icon-192.png', size: 192 },
   { svg: 'static/icons/favicon.svg', out: 'static/icons/icon-512.png', size: 512 },
   { svg: 'scripts/icon-maskable.svg', out: 'static/icons/icon-maskable-512.png', size: 512 },
+  // iOS si ikonu maskuje sám a priehľadné rohy podkladá čiernou, preto favicon
+  // (má zaoblené rohy) renderujeme na pozadí jej vlastnej farby – vznikne plný štvorec.
+  {
+    svg: 'static/icons/favicon.svg',
+    out: 'static/icons/apple-touch-icon.png',
+    size: 180,
+    background: '#0b1220',
+  },
 ]
 
 const browser = await chromium.launch()
@@ -23,7 +31,7 @@ for (const target of targets) {
     deviceScaleFactor: 1,
   })
   await page.setContent(
-    `<style>html,body{margin:0;padding:0}svg{display:block;width:${target.size}px;height:${target.size}px}</style>${svg}`,
+    `<style>html,body{margin:0;padding:0;background:${target.background ?? 'transparent'}}svg{display:block;width:${target.size}px;height:${target.size}px}</style>${svg}`,
   )
   await page.screenshot({ path: join(root, target.out) })
   await page.close()

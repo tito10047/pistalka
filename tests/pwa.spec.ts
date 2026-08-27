@@ -30,6 +30,21 @@ test('service worker sa zaregistruje a appka funguje offline', async ({ page, co
   await page.getByRole('button', { name: /zapískaj/i }).click()
   await expect(page.getByTestId('counter')).toHaveText('1')
 
+  // Vykreslený panel ešte neznamená, že píšťalka píska – zvuk overíme aj bez siete.
+  const peak = await page.evaluate(async () => {
+    const buffer = await window.pistalka.renderWhistleOffline({
+      frequency: 2800,
+      soundType: 'classic',
+      duration: 400,
+      volume: 1,
+    })
+    const data = buffer.getChannelData(0)
+    let max = 0
+    for (let i = 0; i < data.length; i++) max = Math.max(max, Math.abs(data[i]!))
+    return max
+  })
+  expect(peak).toBeGreaterThan(0.3)
+
   await context.setOffline(false)
 })
 
@@ -43,4 +58,24 @@ test('ikony uvedené v manifeste sú dostupné', async ({ page, request }) => {
     const response = await request.get(new URL(icon.src, manifestUrl).toString())
     expect(response.status(), `ikona ${icon.src}`).toBe(200)
   }
+})
+
+test('appka je pripravená na pridanie na plochu iPhonu', async ({ page, request }) => {
+  await page.goto('/')
+
+  await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute(
+    'content',
+    'yes',
+  )
+  await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute(
+    'content',
+    'Píšťalka',
+  )
+
+  const icon = page.locator('link[rel="apple-touch-icon"]')
+  await expect(icon).toHaveAttribute('sizes', '180x180')
+
+  const href = await icon.getAttribute('href')
+  const response = await request.get(new URL(href!, page.url()).toString())
+  expect(response.status()).toBe(200)
 })
