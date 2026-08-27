@@ -1,0 +1,20 @@
+node_modules/
+
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.cache/
+
+.DS_Store
+*.log
+
+# Playwright MCP artefakty
+.playwright-mcp/
+/.idea/.gitignore
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/php.xml
+/.idea/pistalka.iml
+/.idea/vcs.xml

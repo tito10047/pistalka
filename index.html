@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="sk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1220" />
+    <meta name="description" content="Píšťalka s počítadlom pískaní pre tréning boxu." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <title>Píšťalka — tréning boxu</title>
+  </head>
+  <body class="min-h-dvh bg-slate-950 text-slate-100 antialiased">
+    <div
+      class="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+    >
+      <header class="text-center">
+        <!-- pr-* kompenzuje medzeru, ktorú letter-spacing pridáva za posledné písmeno -->
+        <h1 class="pr-[0.3em] text-lg font-semibold tracking-[0.3em] text-amber-400 uppercase">
+          Píšťalka
+        </h1>
+        <p class="pr-[0.1em] text-xs tracking-widest text-slate-500 uppercase">tréning boxu</p>
+      </header>
+
+      <main
+        data-controller="whistle"
+        class="flex flex-1 flex-col items-center justify-center gap-8 py-4"
+      >
+        <div class="text-center">
+          <div
+            data-whistle-target="counter"
+            data-testid="counter"
+            class="text-7xl leading-none font-bold tabular-nums"
+          >
+            0
+          </div>
+          <div
+            data-whistle-target="label"
+            data-testid="counter-label"
+            class="mt-1 pr-[0.25em] text-xs tracking-[0.25em] text-slate-400 uppercase"
+          >
+            pískaní
+          </div>
+        </div>
+
+        <button
+          type="button"
+          data-whistle-target="button"
+          data-action="whistle#blow"
+          class="size-56 shrink-0 cursor-pointer touch-manipulation rounded-full bg-gradient-to-b from-amber-300 to-amber-600 text-3xl font-black tracking-widest text-slate-950 uppercase shadow-2xl shadow-amber-500/30 ring-4 ring-amber-300/25 transition select-none focus-visible:ring-8 focus-visible:outline-none active:scale-95 active:from-amber-400 active:to-amber-700 sm:size-64"
+        >
+          Zapískaj
+        </button>
+
+        <button
+          type="button"
+          data-action="whistle#reset"
+          class="cursor-pointer rounded-full border border-slate-700 px-5 py-2 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 active:scale-95"
+        >
+          Vynulovať počítadlo
+        </button>
+      </main>
+
+      <details
+        data-controller="settings"
+        data-testid="settings"
+        class="rounded-2xl border border-slate-800 bg-slate-900/60"
+      >
+        <summary
+          class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-slate-200 select-none [&::-webkit-details-marker]:hidden"
+        >
+          Nastavenia
+          <span aria-hidden="true" class="text-slate-500">▾</span>
+        </summary>
+
+        <div class="flex flex-col gap-5 border-t border-slate-800 px-4 py-4">
+          <div>
+            <div class="mb-2 flex items-baseline justify-between">
+              <label for="frequency" class="text-sm text-slate-300">Frekvencia</label>
+              <span
+                data-settings-target="frequencyValue"
+                data-testid="frequency-value"
+                class="text-sm font-medium tabular-nums text-amber-400"
+                >2800 Hz</span
+              >
+            </div>
+            <input
+              id="frequency"
+              type="range"
+              min="800"
+              max="4500"
+              step="10"
+              value="2800"
+              class="slider"
+              data-settings-target="frequency"
+              data-action="input->settings#save"
+            />
+          </div>
+
+          <div>
+            <label for="soundType" class="mb-2 block text-sm text-slate-300">Typ zvuku</label>
+            <select
+              id="soundType"
+              class="w-full cursor-pointer rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus-visible:outline-2 focus-visible:outline-amber-400"
+              data-settings-target="soundType"
+              data-action="change->settings#save"
+            >
+              <option value="classic">Klasická (s guličkou)</option>
+              <option value="pealess">Bezguličková (Fox 40)</option>
+              <option value="beep">Pípnutie</option>
+            </select>
+          </div>
+
+          <div>
+            <div class="mb-2 flex items-baseline justify-between">
+              <label for="duration" class="text-sm text-slate-300">Dĺžka</label>
+              <span
+                data-settings-target="durationValue"
+                data-testid="duration-value"
+                class="text-sm font-medium tabular-nums text-amber-400"
+                >0,60 s</span
+              >
+            </div>
+            <input
+              id="duration"
+              type="range"
+              min="100"
+              max="2000"
+              step="50"
+              value="600"
+              class="slider"
+              data-settings-target="duration"
+              data-action="input->settings#save"
+            />
+          </div>
+
+          <div>
+            <div class="mb-2 flex items-baseline justify-between">
+              <label for="volume" class="text-sm text-slate-300">Hlasitosť</label>
+              <span
+                data-settings-target="volumeValue"
+                data-testid="volume-value"
+                class="text-sm font-medium tabular-nums text-amber-400"
+                >100 %</span
+              >
+            </div>
+            <input
+              id="volume"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value="1"
+              class="slider"
+              data-settings-target="volume"
+              data-action="input->settings#save"
+            />
+          </div>
+
+          <div class="flex gap-3 pt-1">
+            <button
+              type="button"
+              data-action="settings#test"
+              class="flex-1 cursor-pointer rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 active:scale-95"
+            >
+              Vyskúšať
+            </button>
+            <button
+              type="button"
+              data-action="settings#restoreDefaults"
+              class="flex-1 cursor-pointer rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 active:scale-95"
+            >
+              Predvolené
+            </button>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>
