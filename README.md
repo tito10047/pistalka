@@ -66,5 +66,15 @@ testy aj konzola prehliadača vedia zvuk vyrenderovať a zmerať.
 
 ## Nasadenie
 
-Po `npm run build` nahraj obsah `public/` na web server. Ak server ukazuje priamo na tento
-checkout, zakomentuj riadok `public/` v `.gitignore` a priečinok commitni.
+Beží na https://pistalka.vsetkosada.sk (Apache na `37.205.15.159`, DocumentRoot
+`/var/www/pistalka/public`). Buildí sa **lokálne**, výsledok sa commituje do gitu a server si ho
+len stiahne – nič sa tam nebuilduje.
+
+```bash
+./deploy.sh              # testy → build → commit public/ → push → git reset na serveri → healthcheck
+./deploy.sh --skip-tests # bez Playwright testov
+./deploy.sh --setup      # jednorazovo: klon repa, Apache vhost, Let's Encrypt certifikát
+```
+
+Preto je `public/` **commitnuté** a nie je v `.gitignore`. Ak nasadenie zlyhá, skript ponúkne
+rollback servera na predchádzajúci commit.

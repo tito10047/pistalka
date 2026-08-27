@@ -1,5 +1,7 @@
 node_modules/
 
+# public/ je výstup buildu a ZÁMERNE sa commituje – server nasadzuje
+# `git reset --hard origin/main`, nebuilduje sa tam. Pozri deploy.sh.
 
 # Playwright
 test-results/
